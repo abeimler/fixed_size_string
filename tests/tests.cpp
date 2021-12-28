@@ -30,7 +30,7 @@ TEST_CASE("default construction") {
     REQUIRE(7 == a.max_size());
 }
 
-TEST_CASE("construction from char*") {
+TEST_CASE("construction from const char*") {
     const char* str = "1234";
     string8 a (str);
 
@@ -40,7 +40,7 @@ TEST_CASE("construction from char*") {
     REQUIRE(7 == a.max_size());
 }
 
-TEST_CASE("assign from char*") {
+TEST_CASE("assign from const char*") {
     const char* str = "1234";
     string8 a = str;
 
@@ -50,7 +50,7 @@ TEST_CASE("assign from char*") {
     REQUIRE(7 == a.max_size());
 }
 
-TEST_CASE("construction from constexpr") {
+TEST_CASE("construction from constexpr char*") {
     constexpr const char* str = "1234";
     constexpr string8 a (str);
 
@@ -60,7 +60,7 @@ TEST_CASE("construction from constexpr") {
     REQUIRE(7 == a.max_size());
 }
 
-TEST_CASE("construction from const buffer") {
+TEST_CASE("construction from constexpr buffer") {
     using string24 = fss::fixed_size_str<23>;
     constexpr std::array<char, 24> buffer = { 'H', 'e', 'l', 'l' , 'o' , ' ' , 'W', 'o', 'r', 'l', 'd', '!', '\0' };
     constexpr size_t buffer_str_size = 12;
@@ -76,9 +76,21 @@ TEST_CASE("construction from const buffer") {
 TEST_CASE("construction from buffer") {
     using string24 = fss::fixed_size_str<23>;
     std::array<char, 24> buffer = { 'H', 'e', 'l', 'l' , 'o' , ' ' , 'W', 'o', 'r', 'l', 'd', '!', '\0' };
-    size_t buffer_str_size = 12;
 
-    string24 a (buffer.data(), buffer_str_size);
+    string24 a (buffer);
+
+    REQUIRE("Hello World!"s == a.c_str());
+    REQUIRE(12 == a.length());
+    REQUIRE_FALSE(a.empty());
+    REQUIRE(23 == a.max_size());
+}
+
+TEST_CASE("construction from buffer with length") {
+    using string24 = fss::fixed_size_str<23>;
+    std::array<char, 24> buffer = { 'H', 'e', 'l', 'l' , 'o' , ' ' , 'W', 'o', 'r', 'l', 'd', '!', '\0' };
+    size_t buffer_str_length = 12;
+
+    string24 a(buffer.data(), buffer_str_length);
 
     REQUIRE("Hello World!"s == a.c_str());
     REQUIRE(12 == a.length());
@@ -244,4 +256,25 @@ TEST_CASE("swap") {
     // l is "34" and k is "xyz"
     REQUIRE("34"s == l.c_str());
     REQUIRE("xyz"s == k.c_str());
+}
+
+TEST_CASE("fill") {
+    string8 m{};
+    REQUIRE(m.empty());
+
+    m.fill('-');
+    REQUIRE("-------"s == m.c_str());
+    REQUIRE(7 == m.length());
+}
+
+TEST_CASE("repair") {
+    string8 n{};
+    sprintf_s(n.data(), 8, "test");
+    
+    REQUIRE("test"s == n.c_str());
+    REQUIRE(0 == n.length());
+
+    n.repair();
+    REQUIRE("test"s == n.c_str());
+    REQUIRE(4 == n.length());
 }
