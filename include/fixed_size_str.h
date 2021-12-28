@@ -3,7 +3,8 @@
 #include <string_view>
 #include <algorithm>
 #include <string>
-#ifndef FIXED_SIZE_STRING_DISABLE_IOSTREAM
+#include <array>
+#ifdef FIXED_SIZE_STRING_ENABLE_IOSTREAM
 #include <ostream>
 #endif
 
@@ -20,31 +21,41 @@ namespace fss
 		template <std::size_t N>
 		/*implicit*/ consteval basic_str(const char (&str)[N]) : active_length_(std::min(N-1, max_length)) {
 			assert(str[N - 1] == '\0');
-			Traits::copy(buffer_, str, active_length_);
+			Traits::copy(buffer_.data(), str, active_length_);
 			buffer_[active_length_] = '\0';
 		}
 
 		/*implicit*/ constexpr basic_str(const CharT* str)
 			: active_length_(std::min(Traits::length(str), max_length))
 		{
-			Traits::copy(buffer_, str, active_length_);
+			Traits::copy(buffer_.data(), str, active_length_);
+		}
+
+		template <std::size_t N>
+		explicit constexpr basic_str(const std::array<CharT, N>& buffer)
+			: active_length_(std::min(Traits::length(buffer), max_length))
+		{
+			Traits::copy(buffer_.data(), buffer.cbegin(), active_length_);
+			buffer_[active_length_] = '\0';
 		}
 
 		constexpr basic_str(const CharT* str, std::size_t length)
 			: active_length_(std::min(length, max_length))
 		{
-			Traits::copy(buffer_, str, active_length_);
+			Traits::copy(buffer_.data(), str, active_length_);
 		}
 
-		constexpr const CharT* c_str() const noexcept { return buffer_; }
+		constexpr const CharT* c_str() const noexcept { return buffer_.data(); }
 
-		constexpr const CharT* data() const noexcept { return buffer_; }
+		constexpr const CharT* data() const noexcept { return buffer_.data(); }
 
-		constexpr CharT* data() noexcept { return buffer_; }
+		constexpr CharT* data() noexcept { return buffer_.data(); }
+
+		constexpr const auto& buffer() const noexcept { return buffer_; }
 
 		constexpr std::basic_string_view<CharT, Traits> str() const noexcept
 		{
-			return std::basic_string_view<CharT, Traits>(buffer_, active_length_);
+			return std::basic_string_view<CharT, Traits>(buffer_.data(), active_length_);
 		}
 
 		constexpr auto length() const noexcept { return active_length_; }
@@ -85,7 +96,7 @@ namespace fss
 
 		constexpr void remove_prefix(std::size_t length)
 		{
-			std::copy(buffer_ + length, buffer_ + active_length_, buffer_);
+			std::copy(buffer_.cbegin() + length, buffer_.cbegin() + active_length_, buffer_.begin());
 			active_length_ -= length;
 			buffer_[active_length_] = '\0';
 		}
@@ -101,7 +112,7 @@ namespace fss
 		{
 			return (max_size() == rhs.max_size())
 				&& (length() == rhs.length())
-				&& std::equal(buffer_, buffer_ + length(), rhs.buffer_);
+				&& std::equal(buffer_.cbegin(), buffer_.cbegin() + length(), rhs.buffer_.cbegin());
 		}
 
 		constexpr bool operator!=(const basic_str& rhs) const
@@ -118,19 +129,19 @@ namespace fss
 	private:
 		constexpr void reset_(const CharT* str, std::size_t length)
 		{
-			Traits::copy(buffer_, str, length);
+			Traits::copy(buffer_.data(), str, length);
 			buffer_[length] = '\0';
 		}
 
 		constexpr void append_(const CharT* str, std::size_t to_copy)
 		{
-			std::copy(str, str + to_copy, buffer_ + active_length_);
+			std::copy(str, str + to_copy, buffer_.begin() + active_length_);
 			active_length_ += to_copy;
 			buffer_[active_length_] = '\0';
 		}
 
 		std::size_t active_length_{ 0 };
-		CharT buffer_[max_length + 1]{};
+		std::array<CharT, max_length + 1> buffer_{};
 	};
 
 	template <class CharT
@@ -142,7 +153,7 @@ namespace fss
 		rhs.swap(lhs);
 	}
 
-	#ifndef FIXED_SIZE_STRING_DISABLE_IOSTREAM
+	#ifdef FIXED_SIZE_STRING_ENABLE_IOSTREAM
 	template <class CharT
 		, std::size_t max_length
 		, class Traits = std::char_traits<CharT>>

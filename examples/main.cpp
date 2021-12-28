@@ -1,4 +1,5 @@
 #include <iostream>
+#define FIXED_SIZE_STRING_ENABLE_IOSTREAM
 #include <fixed_size_str.h>
 #include <assert.h>
 

@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#define FIXED_SIZE_STRING_ENABLE_IOSTREAM
 #include "fixed_size_str.h"
 #include <iostream>
 #include <string>
@@ -29,10 +30,31 @@ TEST_CASE("default construction") {
     REQUIRE(7 == a.max_size());
 }
 
+TEST_CASE("construction from char*") {
+    const char* str = "1234";
+    string8 a (str);
+
+    REQUIRE("1234"s == a.c_str());
+    REQUIRE(4 == a.length());
+    REQUIRE_FALSE(a.empty());
+    REQUIRE(7 == a.max_size());
+}
+
+TEST_CASE("assign from char*") {
+    const char* str = "1234";
+    string8 a = str;
+
+    REQUIRE("1234"s == a.c_str());
+    REQUIRE(4 == a.length());
+    REQUIRE_FALSE(a.empty());
+    REQUIRE(7 == a.max_size());
+}
+
 TEST_CASE("construction from constexpr") {
     constexpr const char* str = "1234";
-    constexpr string8 a = str;
+    constexpr string8 a (str);
 
+    REQUIRE("1234"s == a.c_str());
     REQUIRE(4 == a.length());
     REQUIRE_FALSE(a.empty());
     REQUIRE(7 == a.max_size());
@@ -43,7 +65,7 @@ TEST_CASE("construction from const buffer") {
     constexpr std::array<char, 24> buffer = { 'H', 'e', 'l', 'l' , 'o' , ' ' , 'W', 'o', 'r', 'l', 'd', '!', '\0' };
     constexpr size_t buffer_str_size = 12;
 
-    constexpr string24 a(buffer.data(), buffer_str_size);
+    constexpr string24 a (buffer.data(), buffer_str_size);
 
     REQUIRE("Hello World!"s == a.c_str());
     REQUIRE(12 == a.length());
